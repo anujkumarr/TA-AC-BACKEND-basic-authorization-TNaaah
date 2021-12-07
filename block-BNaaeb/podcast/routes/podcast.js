@@ -38,12 +38,36 @@ router.get('/', function (req, res, next) {
             res.render('adminDashboard', { podcasts, user });
         });
     } else if (user.isAdmin === false) {
-      Podcast.find({isVerified:true})
-        .populate('author')
-        .exec((err, podcasts) => {
-          if (err) return next(err);
-          res.render('userDashboard', { podcasts, user });
-        });
+      if (user.subscription.currentSubscription === 'VIP') {
+        Podcast.find({ isVerified: true })
+          .populate('author')
+          .exec((err, podcasts) => {
+            if (err) return next(err);
+            res.render('userDashboard', { podcasts, user });
+          });
+      } else if (user.subscription.currentSubscription === 'regular') {
+        Podcast.find({ isVerified: true, accessFor: 'regular' })
+          .populate('author')
+          .exec((err, podcasts) => {
+            if (err) return next(err);
+            res.render('userDashboard', { podcasts, user });
+          });
+      } else if (user.subscription.currentSubscription === 'premium') {
+        Podcast.find({ isVerified: true, accessFor: 'premium'   })
+          .populate('author')
+          .exec((errP, podcastsP) => {
+            if (err) return next(err);
+            // res.render('userDashboard', { podcasts, user });
+            Podcast.find({ isVerified: true, accessFor: 'regular' })
+              .populate('author')
+              .exec((err, podcastsR) => {
+                if (err) return next(err);
+                let podcasts = podcastsP.concat(podcastsR);
+                res.render('userDashboard', { podcasts, user });
+              });
+          });
+      }
+      
     }
   });
 });
@@ -68,6 +92,7 @@ router.post(
   upload.fields([{ name: 'cover' }, { name: 'audioTrack' }]),
   (req, res, next) => {
     req.body.author = req.user._id;
+      req.body.accessFor = req.user.subscription.currentSubscription;
     req.body.cover = req.files.cover[0].filename;
     req.body.audioTrack = req.files.audioTrack[0].filename;
     Podcast.create(req.body, (err, createdPodcast) => {
