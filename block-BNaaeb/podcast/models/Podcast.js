@@ -29,9 +29,9 @@ var podcastSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    podcastAvailability: {
+    accessFor: {
       type: String,
-      default: 'free',
+      required:true,
     },
     likes: { type: Number, default: 0 },
     dislikes: { type: Number, default: 0 },
